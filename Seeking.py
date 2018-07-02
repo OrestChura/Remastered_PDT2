@@ -1,6 +1,8 @@
 __author__ = 'ChuraOO'
 # -*- coding: utf-8 -*-
 
+#need to be deleted
+
 import datetime
 import xlwt
 
