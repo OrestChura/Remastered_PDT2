@@ -1,4 +1,4 @@
-﻿__author__ = 'FiksII'
+__author__ = 'ChuraOO'
 # -*- coding: utf-8 -*-
 
 import datetime
