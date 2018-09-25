@@ -7,6 +7,12 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+#TODO: ФИО
+#TODO: "Область свечения"
+#TODO: Пороги
+#TODO: "Протокол", "Тек. кадры"
+#TODO: Окно с "Протр. сигн."
+
 from PyQt4 import QtCore, QtGui
 
 try:
