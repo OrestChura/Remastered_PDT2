@@ -46,9 +46,9 @@ def background(f):
         return q.get()
     return bg_f
 
+
 class PDTMainWindowProc(QtGui.QWidget):
     worker_hardware = WorkerHardware.WorkerHardware()
-
     worker_segmentation = WorkerSegmentation.WorkerSegmentation()
     experimental_data = ExperimentalData.ExperimentalData()
     parameters = Parameters.Parameters()

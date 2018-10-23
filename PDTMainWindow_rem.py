@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'PDTMainWindow.ui'
+# Form implementation generated from reading ui file 'PDTMainWindow_rem.ui'
 #
-# Created: Mon Jan 23 15:17:53 2017
+# Created: Tue Oct 23 12:39:49 2018
 #      by: PyQt4 UI code generator 4.11.2
 #
 # WARNING! All changes made in this file will be lost!
-
-#TODO: ФИО
-#TODO: "Область свечения"
-#TODO: Пороги
-#TODO: "Протокол", "Тек. кадры"
-#TODO: Окно с "Протр. сигн."
 
 from PyQt4 import QtCore, QtGui
 
@@ -29,15 +23,14 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName(_fromUtf8("Form"))
         Form.resize(1300, 742)
         Form.setMaximumSize(QtCore.QSize(6500000, 6500000))
         self.gridLayout_4 = QtGui.QGridLayout(Form)
-        self.gridLayout_4.setMargin(0)
         self.gridLayout_4.setSpacing(0)
+        self.gridLayout_4.setContentsMargins(11, 0, 0, 0)
         self.gridLayout_4.setObjectName(_fromUtf8("gridLayout_4"))
         self.tabWidget = QtGui.QTabWidget(Form)
         self.tabWidget.setEnabled(True)
@@ -54,7 +47,7 @@ class Ui_Form(object):
         self.frame.setFrameShadow(QtGui.QFrame.Raised)
         self.frame.setObjectName(_fromUtf8("frame"))
         self.label_region_defined = QtGui.QLabel(self.frame)
-        self.label_region_defined.setGeometry(QtCore.QRect(330, 30, 261, 61))
+        self.label_region_defined.setGeometry(QtCore.QRect(330, 30, 261, 71))
         palette = QtGui.QPalette()
         brush = QtGui.QBrush(QtGui.QColor(255, 0, 0))
         brush.setStyle(QtCore.Qt.SolidPattern)
@@ -100,7 +93,7 @@ class Ui_Form(object):
         self.groupProtocol.setGeometry(QtCore.QRect(10, 170, 281, 51))
         self.groupProtocol.setObjectName(_fromUtf8("groupProtocol"))
         self.pLoadExperiment = QtGui.QPushButton(self.groupProtocol)
-        self.pLoadExperiment.setGeometry(QtCore.QRect(10, 20, 261, 28))
+        self.pLoadExperiment.setGeometry(QtCore.QRect(10, 20, 261, 31))
         font = QtGui.QFont()
         font.setPointSize(14)
         self.pLoadExperiment.setFont(font)
@@ -178,12 +171,13 @@ class Ui_Form(object):
         self.edit_full_name = QtGui.QLineEdit(self.frame)
         self.edit_full_name.setGeometry(QtCore.QRect(330, 0, 131, 22))
         self.edit_full_name.setText(_fromUtf8(""))
+        self.edit_full_name.setAlignment(QtCore.Qt.AlignCenter)
         self.edit_full_name.setObjectName(_fromUtf8("edit_full_name"))
         self.dateEdit = QtGui.QDateEdit(self.frame)
         self.dateEdit.setGeometry(QtCore.QRect(480, 0, 110, 22))
         self.dateEdit.setObjectName(_fromUtf8("dateEdit"))
         self.layoutWidget = QtGui.QWidget(self.frame)
-        self.layoutWidget.setGeometry(QtCore.QRect(10, 290, 581, 33))
+        self.layoutWidget.setGeometry(QtCore.QRect(10, 290, 581, 39))
         self.layoutWidget.setObjectName(_fromUtf8("layoutWidget"))
         self.horizontalLayout_4 = QtGui.QHBoxLayout(self.layoutWidget)
         self.horizontalLayout_4.setMargin(0)
@@ -432,6 +426,27 @@ class Ui_Form(object):
         self.horizontalLayout_3.addWidget(self.groupBox)
         self.gridLayout_5.addLayout(self.horizontalLayout_3, 1, 0, 1, 2)
         self.tabWidget.addTab(self.tMain, _fromUtf8(""))
+        self.tFullWindow = QtGui.QWidget()
+        self.tFullWindow.setObjectName(_fromUtf8("tFullWindow"))
+        self.groupBoxSuperposition_2 = QtGui.QGroupBox(self.tFullWindow)
+        self.groupBoxSuperposition_2.setGeometry(QtCore.QRect(0, 0, 1284, 715))
+        self.groupBoxSuperposition_2.setMinimumSize(QtCore.QSize(0, 0))
+        font = QtGui.QFont()
+        font.setPointSize(11)
+        self.groupBoxSuperposition_2.setFont(font)
+        self.groupBoxSuperposition_2.setAlignment(QtCore.Qt.AlignCenter)
+        self.groupBoxSuperposition_2.setObjectName(_fromUtf8("groupBoxSuperposition_2"))
+        self.gridLayout_6 = QtGui.QGridLayout(self.groupBoxSuperposition_2)
+        self.gridLayout_6.setMargin(0)
+        self.gridLayout_6.setSpacing(0)
+        self.gridLayout_6.setObjectName(_fromUtf8("gridLayout_6"))
+        self.graph_image_superposition_2 = ImageView(self.groupBoxSuperposition_2)
+        self.graph_image_superposition_2.setMinimumSize(QtCore.QSize(0, 0))
+        self.graph_image_superposition_2.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.graph_image_superposition_2.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.graph_image_superposition_2.setObjectName(_fromUtf8("graph_image_superposition_2"))
+        self.gridLayout_6.addWidget(self.graph_image_superposition_2, 0, 0, 1, 1)
+        self.tabWidget.addTab(self.tFullWindow, _fromUtf8(""))
         self.tSettings = QtGui.QWidget()
         self.tSettings.setObjectName(_fromUtf8("tSettings"))
         self.groupBoxProtocol = QtGui.QGroupBox(self.tSettings)
@@ -629,7 +644,7 @@ class Ui_Form(object):
         self.pLoadExperiment.setText(_translate("Form", "Загрузка протокола", None))
         self.pStart.setText(_translate("Form", "СТАРТ", None))
         self.label_status.setText(_translate("Form", ".", None))
-        self.edit_full_name.setPlaceholderText(_translate("Form", "Фамилия Имя Отчество", None))
+        self.edit_full_name.setPlaceholderText(_translate("Form", "ФИО", None))
         self.pManual.setText(_translate("Form", "Ручной ввод областей", None))
         self.pResetRegion.setText(_translate("Form", "Сброс областей", None))
         self.pRecord.setToolTip(_translate("Form", "Протоколирование", None))
@@ -643,6 +658,8 @@ class Ui_Form(object):
         self.groupBoxSuperposition.setTitle(_translate("Form", "Наложенное изображение", None))
         self.groupBox.setTitle(_translate("Form", "Флуоресцентное изображение", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tMain), _translate("Form", "Основное", None))
+        self.groupBoxSuperposition_2.setTitle(_translate("Form", "Наложенное изображение", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tFullWindow), _translate("Form", "В полное окно", None))
         self.groupBoxProtocol.setTitle(_translate("Form", "Параметры протоколирования", None))
         self.label_2.setText(_translate("Form", "Папка для сохранения результатов", None))
         self.eLoggingFolder.setText(_translate("Form", "Результат", None))
@@ -697,3 +714,13 @@ class Ui_Form(object):
 
 from QLed import QLed
 from pyqtgraph import ImageView, PlotWidget
+
+if __name__ == "__main__":
+    import sys
+    app = QtGui.QApplication(sys.argv)
+    Form = QtGui.QWidget()
+    ui = Ui_Form()
+    ui.setupUi(Form)
+    Form.show()
+    sys.exit(app.exec_())
+
