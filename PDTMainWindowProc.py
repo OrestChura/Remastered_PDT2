@@ -1,7 +1,7 @@
 ﻿__author__ = 'FiksII'
 # -*- coding: utf-8 -*-
 
-from PDTMainWindow import *
+from PDTMainWindow_rem import *
 import QLed
 from PyQt4 import QtGui, QtCore, Qt
 import WorkerHardware
@@ -46,9 +46,9 @@ def background(f):
         return q.get()
     return bg_f
 
+
 class PDTMainWindowProc(QtGui.QWidget):
     worker_hardware = WorkerHardware.WorkerHardware()
-
     worker_segmentation = WorkerSegmentation.WorkerSegmentation()
     experimental_data = ExperimentalData.ExperimentalData()
     parameters = Parameters.Parameters()
@@ -119,7 +119,9 @@ class PDTMainWindowProc(QtGui.QWidget):
         self.ui.cNoneNormilize.clicked.connect(self.check_use_black_image_clicked)
         self.ui.graph_image.getImageItem().setAutoDownsample(True)
         self.ui.graph_image_superposition.getImageItem().setAutoDownsample(True)
-
+    ####
+        self.ui.graph_image_superposition_2.getImageItem().setAutoDownsample(True)
+    ####
         self.ui.pBlueSingle.clicked.connect(self.push_single_frame_400_clicked)
         self.ui.pRedSingle.clicked.connect(self.push_single_frame_660_clicked)
         self.ui.pIRSingle.clicked.connect(self.push_single_frame_740_clicked)
@@ -335,9 +337,13 @@ class PDTMainWindowProc(QtGui.QWidget):
 
         t1 = time.clock()
 
-        image_labels = ['image_cleared_with_contours_rbg', 'image_superposition_rgb']
-        graphs = [self.ui.graph_image, self.ui.graph_image_superposition]
-        graphs_images_data = [self.experimental_data.graph_image_data, self.experimental_data.graph_image_superposition_data]
+        #image_labels = ['image_cleared_with_contours_rbg', 'image_superposition_rgb']
+        #graphs = [self.ui.graph_image, self.ui.graph_image_superposition]
+        #graphs_images_data = [self.experimental_data.graph_image_data, self.experimental_data.graph_image_superposition_data]
+
+        image_labels = ['image_cleared_with_contours_rbg', 'image_superposition_rgb', 'image_superposition_rgb']
+        graphs = [self.ui.graph_image, self.ui.graph_image_superposition, self.ui.graph_image_superposition_2]
+        graphs_images_data = [self.experimental_data.graph_image_data,self.experimental_data.graph_image_superposition_data, self.experimental_data.graph_image_superposition_data]
 
         for image_label, graph, graph_image_data in zip(image_labels, graphs, graphs_images_data):
             images = getattr(self.experimental_data, image_label)
@@ -435,7 +441,7 @@ class PDTMainWindowProc(QtGui.QWidget):
                     self.experimental_data.mode.remove("laser off")
                     self.experimental_data.mode.add("laser on")
                     self.set_fluorcontroller_laser_on_mode()
-                    self.ui.label_status.setText(u"Лазер включён!!!!")
+                    self.ui.label_status.setText(u"Лазер включён")
                 ### Старт только черный
             else:
                 if "laser on" in self.experimental_data.mode:
