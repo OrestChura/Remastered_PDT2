@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 from __future__ import division
 __author__ = 'FiksII'
@@ -198,6 +198,13 @@ class WorkerSegmentation(QtCore.QThread):
                     experimental_data.image_cleared[wavelength] = experimental_data.image_cleared[wavelength].astype(np.uint16)
                     experimental_data.image_cleared_with_contours_rbg[wavelength] = cv2.cvtColor(experimental_data.image_cleared[wavelength].copy(),cv2.COLOR_GRAY2RGB)
 
+                    ###
+                    if not experimental_data.flag:
+                        cv2.imshow("Cleared", experimental_data.image_cleared[wavelength])
+                        cv2.imshow("Cleared_with_contours_rbg", experimental_data.image_cleared_with_contours_rbg[wavelength])
+                        experimental_data.flag = True
+                    ###
+
                     self.good_iterations[wavelength]=self.good_iterations[wavelength]+1
 
                     if "monitoring" not in experimental_data.mode:
@@ -256,8 +263,18 @@ class WorkerSegmentation(QtCore.QThread):
 
                         else:
                             experimental_data.image_superposition_rgb[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB)
+
+                        ###
+                        img_bkgr = experimental_data.image_cleared[740];
+
+                        ###
+
                     else:
                         experimental_data.image_superposition_rgb[wavelength] = None
+
+                        ###
+                        experimental_data.image_superposition_vivo[wavelength] = None
+                        ###
 
                     t2 = time.clock()
                     # print "Processing image wavelength={wavelength}, {t} s. Pool length {len_pool}".format(t=t2-t1, wavelength=wavelength, len_pool=len(self.q))

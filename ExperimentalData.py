@@ -1,4 +1,4 @@
-﻿__author__ = 'FiksII'
+__author__ = 'FiksII'
 # -*- coding: utf-8 -*-
 import Properties
 import collections
@@ -14,6 +14,11 @@ class ExperimentalData(object):
         self.skin_data = {}
         self.tumor_data = {}
         self.image_superposition_rgb = {}
+
+        ###
+        self.image_superposition_vivo = {}
+        ###
+
         self.is_first_image = {}
         self.mode = set()
         self.graph_image_data = {}
@@ -56,6 +61,11 @@ class ExperimentalData(object):
         self.image_superposition_rgb[400]=None
         self.image_superposition_rgb[660]=None
 
+        ###
+        self.image_superposition_vivo[400] = None
+        self.image_superposition_vivo[600] = None
+        ###
+
         self.is_first_image[0]=True
         self.is_first_image[400]=True
         self.is_first_image[660]=True
@@ -73,3 +83,7 @@ class ExperimentalData(object):
         self.graph_image_superposition_data[0] = {}
         self.graph_image_superposition_data[400] = {}
         self.graph_image_superposition_data[660] = {}
+
+        ###
+        self.flag = False
+        ###

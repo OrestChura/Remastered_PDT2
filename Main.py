@@ -14,7 +14,7 @@ def main():
         MainWindow.setGeometry(5, 25, GetSystemMetrics(0), GetSystemMetrics(1)-100)
         MainWindow.show()
         sys.exit(app.exec_())
-    except Exception,e:
+    except Exception, e:
         print e.message
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 ﻿__author__ = 'FiksII'
 # -*- coding: utf-8 -*-
 
-from PDTMainWindow import *
+from PDTMainWindow_rem import *
 import QLed
 from PyQt4 import QtGui, QtCore, Qt
 import WorkerHardware
@@ -48,7 +48,6 @@ def background(f):
 
 class PDTMainWindowProc(QtGui.QWidget):
     worker_hardware = WorkerHardware.WorkerHardware()
-
     worker_segmentation = WorkerSegmentation.WorkerSegmentation()
     experimental_data = ExperimentalData.ExperimentalData()
     parameters = Parameters.Parameters()
@@ -119,7 +118,9 @@ class PDTMainWindowProc(QtGui.QWidget):
         self.ui.cNoneNormilize.clicked.connect(self.check_use_black_image_clicked)
         self.ui.graph_image.getImageItem().setAutoDownsample(True)
         self.ui.graph_image_superposition.getImageItem().setAutoDownsample(True)
-
+    ####
+        self.ui.graph_image_superposition_2.getImageItem().setAutoDownsample(True)
+    ####
         self.ui.pBlueSingle.clicked.connect(self.push_single_frame_400_clicked)
         self.ui.pRedSingle.clicked.connect(self.push_single_frame_660_clicked)
         self.ui.pIRSingle.clicked.connect(self.push_single_frame_740_clicked)
@@ -335,9 +336,14 @@ class PDTMainWindowProc(QtGui.QWidget):
 
         t1 = time.clock()
 
-        image_labels = ['image_cleared_with_contours_rbg', 'image_superposition_rgb']
-        graphs = [self.ui.graph_image, self.ui.graph_image_superposition]
-        graphs_images_data = [self.experimental_data.graph_image_data, self.experimental_data.graph_image_superposition_data]
+        #image_labels = ['image_cleared_with_contours_rbg', 'image_superposition_rgb']
+        #graphs = [self.ui.graph_image, self.ui.graph_image_superposition]
+        #graphs_images_data = [self.experimental_data.graph_image_data, self.experimental_data.graph_image_superposition_data]
+        ###
+        image_labels = ['image_cleared_with_contours_rbg', 'image_superposition_rgb', 'image_superposition_rgb']
+        graphs = [self.ui.graph_image, self.ui.graph_image_superposition, self.ui.graph_image_superposition_2]
+        graphs_images_data = [self.experimental_data.graph_image_data,self.experimental_data.graph_image_superposition_data, self.experimental_data.graph_image_superposition_data]
+        ###
 
         for image_label, graph, graph_image_data in zip(image_labels, graphs, graphs_images_data):
             images = getattr(self.experimental_data, image_label)
@@ -367,7 +373,7 @@ class PDTMainWindowProc(QtGui.QWidget):
                         # info = numpy.iinfo(image.dtype)
                         for w in graph_image_data.keys():
                             graph_image_data[w]['levels'] = [0, 256]
-
+#TODO: levels плохо работают
                 graph.getHistogramWidget().item.setLevels(*graph_image_data[wavelength]['levels'])
 
             if self.parameters.use_autolevel:
@@ -419,6 +425,17 @@ class PDTMainWindowProc(QtGui.QWidget):
         if image is None:
             return
 
+        ###
+       # try:
+       #     print image
+        #    f = open("1.txt", 'r+')
+        #    if f.read().decode('utf-8') == '':
+       #         image.tofile(f)
+       #     f.close()
+       # except Exception, e:
+      #      print e.message
+        ###
+
         if self.parameters.flip_images:
             image = image[-1::-1, -1::-1]
 
@@ -435,7 +452,7 @@ class PDTMainWindowProc(QtGui.QWidget):
                     self.experimental_data.mode.remove("laser off")
                     self.experimental_data.mode.add("laser on")
                     self.set_fluorcontroller_laser_on_mode()
-                    self.ui.label_status.setText(u"Лазер включён!!!!")
+                    self.ui.label_status.setText(u"Лазер включён")
                 ### Старт только черный
             else:
                 if "laser on" in self.experimental_data.mode:
@@ -1061,6 +1078,7 @@ class PDTMainWindowProc(QtGui.QWidget):
         self.fluocontrollers.lighting_controller.SetLightingMode(iTask, constants.LM_NONE, int(self.parameters.exposition[0] * 1e6))
         self.experimental_data.working_leds.append(0)
         iTask = iTask + 1
+        self.ui.combo_selected_image.addItem(u"темновой кадр")
 
         if self.ui.widget_led660.value == True:
             self.fluocontrollers.lighting_controller.SetLightingMode(iTask, constants.LM_RED, int(self.parameters.exposition[660] * 1e6))
@@ -1074,7 +1092,7 @@ class PDTMainWindowProc(QtGui.QWidget):
             self.experimental_data.working_leds.append(400)
             self.ui.combo_selected_image.addItem(u"400 нм")
 
-        self.ui.combo_selected_image.addItem(u"темновой кадр")
+
         # self.fluocontrollers.lighting_controller.SetPeriod(int(1.5*float(self.ui.eCameraExposition.text())*1e6))
         self.fluocontrollers.lighting_controller.SetPeriod(int(self.parameters.lighting_period * 1e6))
         self.fluocontrollers.lighting_controller.SetModesNumber(iTask)

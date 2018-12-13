@@ -1,1 +1,6 @@
 venv/*
+
+.idea/*
+*.pyc
+*.orig
+1.txt
