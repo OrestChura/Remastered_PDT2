@@ -1,7 +1,10 @@
-__author__ = 'FiksII'
 # -*- coding: utf-8 -*-
+
+__author__ = 'FiksII'
+
 import Properties
 import collections
+
 
 class ExperimentalData(object):
 
@@ -10,7 +13,7 @@ class ExperimentalData(object):
         self.image_temp = {}
         self.image_glare_prev = {}
         self.image_cleared = {}
-        self.image_cleared_with_contours_rbg = {}  # Цветное изображние (сегментированнное)
+        self.image_cleared_with_contours_rbg = {}   #Цветное изображение(сегментированное)
         self.skin_data = {}
         self.tumor_data = {}
         self.image_superposition_rgb = {}

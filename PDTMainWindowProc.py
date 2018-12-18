@@ -1,5 +1,7 @@
-﻿__author__ = 'FiksII'
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
+
+__author__ = 'FiksII'
+
 
 from PDTMainWindow_rem import *
 import QLed
