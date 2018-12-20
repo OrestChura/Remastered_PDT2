@@ -66,7 +66,7 @@ class ExperimentalData(object):
 
         ###
         self.image_superposition_vivo[400] = None
-        self.image_superposition_vivo[600] = None
+        self.image_superposition_vivo[660] = None
         ###
 
         self.is_first_image[0]=True

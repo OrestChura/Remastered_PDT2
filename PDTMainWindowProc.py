@@ -288,6 +288,10 @@ class PDTMainWindowProc(QtGui.QWidget):
             if os.path.isfile("logging_storage.pkl"):
                 os.remove("logging_storage.pkl")
 
+            ###
+            self.experimental_data.flag = False
+            ###
+
     def mouse_moved_on_graph_image(self, evt):
         wavelength = self.get_selected_image_wavelength_on_graph_image()
 
@@ -342,7 +346,8 @@ class PDTMainWindowProc(QtGui.QWidget):
         #graphs = [self.ui.graph_image, self.ui.graph_image_superposition]
         #graphs_images_data = [self.experimental_data.graph_image_data, self.experimental_data.graph_image_superposition_data]
         ###
-        image_labels = ['image_cleared_with_contours_rbg', 'image_superposition_rgb', 'image_superposition_rgb']
+        #TODO: graph_image_superposition_2 -> vivo здесь и в MainWindow
+        image_labels = ['image_cleared_with_contours_rbg', 'image_superposition_rgb', 'image_superposition_vivo']
         graphs = [self.ui.graph_image, self.ui.graph_image_superposition, self.ui.graph_image_superposition_2]
         graphs_images_data = [self.experimental_data.graph_image_data,self.experimental_data.graph_image_superposition_data, self.experimental_data.graph_image_superposition_data]
         ###
@@ -350,7 +355,17 @@ class PDTMainWindowProc(QtGui.QWidget):
         for image_label, graph, graph_image_data in zip(image_labels, graphs, graphs_images_data):
             images = getattr(self.experimental_data, image_label)
 
-            if wavelength == 0 and image_label == 'image_superposition_rgb':
+            # if wavelength == 0 and image_label == 'image_superposition_rgb':
+            #     if 740 in self.experimental_data.image_cleared and self.experimental_data.image_cleared[740] is not None:
+            #         image = self.experimental_data.image_cleared[740]
+            # else:
+            #     if wavelength in images and images[wavelength] is not None:
+            #         image = images[wavelength]
+            #     else:
+            #         continue
+
+            ###
+            if wavelength == 0 and image_label in ('image_superposition_rgb', 'image_superposition_vivo'):
                 if 740 in self.experimental_data.image_cleared and self.experimental_data.image_cleared[740] is not None:
                     image = self.experimental_data.image_cleared[740]
             else:
@@ -358,6 +373,7 @@ class PDTMainWindowProc(QtGui.QWidget):
                     image = images[wavelength]
                 else:
                     continue
+            ###
 
             if 'levels' not in graph_image_data[wavelength]:
                 if image_label == 'image_cleared_with_contours_rbg':
@@ -368,7 +384,7 @@ class PDTMainWindowProc(QtGui.QWidget):
                         for w in graph_image_data.keys():
                             graph_image_data[w]['levels'] = [0, 1000]
 
-                if image_label == 'image_superposition_rgb':
+                if image_label in ('image_superposition_rgb', 'image_superposition_vivo'):
                     if self.parameters.use_autolevel:
                         graph_image_data[wavelength]['levels'] = [0, 256]
                     else:
@@ -426,17 +442,6 @@ class PDTMainWindowProc(QtGui.QWidget):
 
         if image is None:
             return
-
-        ###
-       # try:
-       #     print image
-        #    f = open("1.txt", 'r+')
-        #    if f.read().decode('utf-8') == '':
-       #         image.tofile(f)
-       #     f.close()
-       # except Exception, e:
-      #      print e.message
-        ###
 
         if self.parameters.flip_images:
             image = image[-1::-1, -1::-1]

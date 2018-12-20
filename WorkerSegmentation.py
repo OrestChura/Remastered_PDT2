@@ -15,6 +15,11 @@ from pprint import pprint
 import cv2
 import os
 
+###
+from PIL import Image
+from matplotlib import pyplot as plt
+###
+
 class WorkerSegmentation(QtCore.QThread):
     image_segmented = QtCore.pyqtSignal(object)
     data=None
@@ -53,6 +58,12 @@ class WorkerSegmentation(QtCore.QThread):
     def ConvertTo8Bit(self, img, MaxVal):
         img = (img.astype(np.float) / MaxVal * 255).astype(np.uint8)
         return img
+
+    ###
+    def ConvertTo7Bit(self, img, MaxVal):
+        img = (img.astype(np.float) / MaxVal * 127).astype(np.uint8)
+        return img
+    ###
 
     def CalculateProperties(self, wavelength, experimental_data, parameters):
         Pr = experimental_data.properties
@@ -139,6 +150,24 @@ class WorkerSegmentation(QtCore.QThread):
                     experimental_data.image_cleared[0] = experimental_data.image[0]
                     experimental_data.image_cleared_with_contours_rbg[0] = cv2.cvtColor(experimental_data.image[0],cv2.COLOR_GRAY2RGB)
 
+                    # ###
+                    # if not experimental_data.flag:
+                    #     experimental_data.flag = True
+                    #     x1 = experimental_data.image_cleared[wavelength]
+                    #     x2 = experimental_data.image_cleared_with_contours_rbg[wavelength]
+                    #     np.savetxt('imgclr.txt', x1, '%-7d')
+                    #     with file('imgclrrgb.txt', 'w') as outfile:
+                    #         outfile.write('# Array shape: {0}\n'.format(x2.shape))
+                    #         for data_slice in x2:
+                    #             np.savetxt(outfile, data_slice, fmt='%-7d')
+                    #             outfile.write('# New slice\n')
+                    #     # plt.figure(1)
+                    #     # plt.imshow(x1, interpolation='nearest')
+                    #     # plt.figure(2)
+                    #     # plt.imshow(x1, interpolation='nearest')
+                    #     # plt.show()
+                    # ###
+
                     if (parameters.tumor_shadowing_type == "glare" or "region not defined" in experimental_data.mode) and "laser on" in experimental_data.mode and len(experimental_data.image_glare_prev[0]) > 0:
                         experimental_data.image_cleared[0] = experimental_data.image_glare_prev[0][0]
                         experimental_data.image_cleared_with_contours_rbg[0] = cv2.cvtColor(experimental_data.image_glare_prev[0][0],cv2.COLOR_GRAY2RGB)
@@ -198,17 +227,7 @@ class WorkerSegmentation(QtCore.QThread):
                     experimental_data.image_cleared[wavelength] = experimental_data.image_cleared[wavelength].astype(np.uint16)
                     experimental_data.image_cleared_with_contours_rbg[wavelength] = cv2.cvtColor(experimental_data.image_cleared[wavelength].copy(),cv2.COLOR_GRAY2RGB)
 
-                    ###
-                    if not experimental_data.flag:
-                        experimental_data.flag = True
-                        x1 = experimental_data.image_cleared[wavelength]
-                        x2 = experimental_data.image_cleared_with_contours_rbg[wavelength]
-                        cv2.imshow("Cleared", x1)
-                        cv2.imshow("Cleared_with_contours_rbg", x2)
-                        if cv2.waitKey(0):
-                            cv2.destroyWindow('Cleared')
-                            cv2.destroyWindow('Cleared_with_contours_rbg')
-                    ###
+
 
                     self.good_iterations[wavelength]=self.good_iterations[wavelength]+1
 
@@ -265,15 +284,46 @@ class WorkerSegmentation(QtCore.QThread):
                             tumor_color = cv2.cvtColor(cv2.applyColorMap(tumor_image, cv2.COLORMAP_JET),cv2.COLOR_BGR2RGB)  #experimental_data.max_image_value-
                             experimental_data.image_superposition_rgb[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740],cv2.COLOR_GRAY2RGB)
                             experimental_data.image_superposition_rgb[wavelength][experimental_data.tumor_data[wavelength]['mask'] == 1] = tumor_color[experimental_data.tumor_data[wavelength]['mask'] == 1]
-
                         else:
                             experimental_data.image_superposition_rgb[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB)
+
+                        ### Наложение [wl] на [740] цветом wl для отслеживания в режиме in-vivo
+                        imgwl = experimental_data.image_cleared_with_contours_rbg[wavelength]
+                        if wavelength == 660:
+                            for d2 in imgwl:
+                                for i in d2:
+                                    i[1] = 0;
+                                    i[2] = 0;
+                        else:
+                            for d2 in imgwl:
+                                for i in d2:
+                                    i[1] = 0;
+                                    i[0] = 0;
+
+                        experimental_data.image_superposition_vivo[wavelength] = self.ConvertTo7Bit(cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB), 255) + self.ConvertTo7Bit(imgwl, experimental_data.max_image_value)
+                        #experimental_data.image_superposition_vivo[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB) + imgwl
+                        # if not experimental_data.flag:
+                        #     experimental_data.flag = True
+                        #     # with open('image_superposition_vivo.txt', 'w') as outfile:
+                        #     #     outfile.write('# Array shape: {0}\n'.format(experimental_data.image_superposition_vivo[wavelength].shape))
+                        #     #     for data_slice in experimental_data.image_superposition_vivo[wavelength]:
+                        #     #          np.savetxt(outfile, data_slice, fmt='%-7d')
+                        #     #          outfile.write('# New slice\n')
+                        #     # w, h = 1280, 960
+                        #     #
+                        #     # img = Image.fromarray(experimental_data.image_superposition_vivo[wavelength], 'RGB')
+                        #     # img.show()
+                        ###
+
                     else:
                         experimental_data.image_superposition_rgb[wavelength] = None
 
+                        ###
+                        experimental_data.image_superposition_vivo[wavelength] = None
+                        ###
+
                     t2 = time.clock()
                     # print "Processing image wavelength={wavelength}, {t} s. Pool length {len_pool}".format(t=t2-t1, wavelength=wavelength, len_pool=len(self.q))
-
 
                     if "region defined" in experimental_data.mode:
                         self.CalculateProperties(wavelength, experimental_data, parameters)

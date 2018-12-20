@@ -43,6 +43,7 @@ class WorkerHardware(QtCore.QThread):
                 FrameData = Frame.GetData()
                 frame = numpy.frombuffer(FrameData, numpy.uint32)
                 image = frame.reshape(self.image_size)
+                #TODO: картинки перевёрнутые; возможно, из-за транспонирования
                 image = image.transpose()
                 image = image.astype(numpy.uint16)  # uint8
 
@@ -78,6 +79,7 @@ class WorkerHardware(QtCore.QThread):
             else:
                 image = None
                 task.wavelength = None
+                #TODO: может, стоит поставить другую длительность пропуска, исходя из экспозиции
                 time.sleep(0.05)
 
             self.image_received.emit((task, image))
