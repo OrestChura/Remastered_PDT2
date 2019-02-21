@@ -67,6 +67,7 @@ class ExperimentalData(object):
         ###
         self.image_superposition_vivo[400] = None
         self.image_superposition_vivo[660] = None
+        self.proportion = 50
         ###
 
         self.is_first_image[0]=True

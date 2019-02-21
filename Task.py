@@ -5,6 +5,10 @@ class Task:
     LigthExpTime=0
     Binning=0
 
+    ###
+    vivo = False
+    ###
+
     def Task(self):
         pass
 

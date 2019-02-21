@@ -60,8 +60,8 @@ class WorkerSegmentation(QtCore.QThread):
         return img
 
     ###
-    def ConvertTo7Bit(self, img, MaxVal):
-        img = (img.astype(np.float) / MaxVal * 127).astype(np.uint8)
+    def ConvertToXBit(self, img, MaxVal, proportion):
+        img = (img.astype(np.float) / MaxVal * (2.55*proportion)).astype(np.uint8)
         return img
     ###
 
@@ -145,190 +145,198 @@ class WorkerSegmentation(QtCore.QThread):
                 while(experimental_data.is_locked):
                     # print "experimental_data.is_locked:", experimental_data.is_locked
                     time.sleep(0.1)
+                ###
+                if not task.vivo:
+                ###
+                    if wavelength == 0:
+                        experimental_data.image_cleared[0] = experimental_data.image[0]
+                        experimental_data.image_cleared_with_contours_rbg[0] = cv2.cvtColor(experimental_data.image[0],cv2.COLOR_GRAY2RGB)
 
-                if wavelength == 0:
-                    experimental_data.image_cleared[0] = experimental_data.image[0]
-                    experimental_data.image_cleared_with_contours_rbg[0] = cv2.cvtColor(experimental_data.image[0],cv2.COLOR_GRAY2RGB)
-
-                    # ###
-                    # if not experimental_data.flag:
-                    #     experimental_data.flag = True
-                    #     x1 = experimental_data.image_cleared[wavelength]
-                    #     x2 = experimental_data.image_cleared_with_contours_rbg[wavelength]
-                    #     np.savetxt('imgclr.txt', x1, '%-7d')
-                    #     with file('imgclrrgb.txt', 'w') as outfile:
-                    #         outfile.write('# Array shape: {0}\n'.format(x2.shape))
-                    #         for data_slice in x2:
-                    #             np.savetxt(outfile, data_slice, fmt='%-7d')
-                    #             outfile.write('# New slice\n')
-                    #     # plt.figure(1)
-                    #     # plt.imshow(x1, interpolation='nearest')
-                    #     # plt.figure(2)
-                    #     # plt.imshow(x1, interpolation='nearest')
-                    #     # plt.show()
-                    # ###
-
-                    if (parameters.tumor_shadowing_type == "glare" or "region not defined" in experimental_data.mode) and "laser on" in experimental_data.mode and len(experimental_data.image_glare_prev[0]) > 0:
-                        experimental_data.image_cleared[0] = experimental_data.image_glare_prev[0][0]
-                        experimental_data.image_cleared_with_contours_rbg[0] = cv2.cvtColor(experimental_data.image_glare_prev[0][0],cv2.COLOR_GRAY2RGB)
-
-                        for wl in (400,660):
-                            if wl in monitoring_data.tumor_area and len(monitoring_data.tumor_area[wl]) > 0 and "region defined" in experimental_data.mode:
-                                glare_area = monitoring_data.tumor_area[wl][-1]
-                                # print "glare_area: ",glare_area
-                                current_level = find_glare_level_for_image(experimental_data.image_glare_prev[0][0], glare_area, parameters.x_mm_in_pixel, parameters.y_mm_in_pixel)
-                                contour = contour_from_level(experimental_data.image_glare_prev[0][0], current_level)
-                            else:
-                                contour = contour_from_level(experimental_data.image_glare_prev[0][0], experimental_data.max_image_value - parameters.glare_parameters["dmin_glare_value"])
-
-                            tumor_poly = [[c[0][0],c[0][1]] for c in contour]
-                            if "mask" not in experimental_data.tumor_data[wl]:
-                                experimental_data.tumor_data[wl]["mask"] = np.zeros(experimental_data.image_cleared[0].shape, np.uint8)
-
-                            # Сделать смещение маски кожи
-                            experimental_data.tumor_data[wl]["poly"] = tumor_poly
-                            experimental_data.tumor_data[wl]["mask"][:] = 0
-                            cv2.fillPoly(experimental_data.tumor_data[wl]["mask"], [np.asarray(experimental_data.tumor_data[wl]["poly"])], 1)
-
-                            # Сделать определение маски кожи
-
-                            # experimental_data.skin_data[wavelength]["mask"]=np.ones(experimental_data.image_cleared[wavelength].shape)
-                            #
-                            # experimental_data.image_cleared_with_contours_rbg[wavelength]=cv2.cvtColor(experimental_data.image_cleared[wavelength],cv2.COLOR_GRAY2BGR)
-                            # experimental_data.tumor_data[wavelength]['image'] = experimental_data.image_cleared[wavelength]*experimental_data.tumor_data[wavelength]["mask"]
-                            #
-                            # if experimental_data.skin_data[wavelength]["mask"].sum()>0:
-                            #     if experimental_data.tumor_data[wavelength]["mask"].sum()>0:
-                            #         diff_mask = experimental_data.skin_data[wavelength]["mask"].astype(np.float)-experimental_data.tumor_data[wavelength]["mask"].astype(np.float)
-                            #         diff_mask[diff_mask < 0] = 0
-                            #         experimental_data.skin_data[wavelength]["image"] = experimental_data.image_cleared[wavelength] * diff_mask.astype(np.uint16)
-                            #     else:
-                            #         experimental_data.skin_data[wavelength]["image"] = experimental_data.image_cleared[wavelength] * experimental_data.skin_data[wavelength]["mask"]
-                            # else:
-                            #     experimental_data.skin_data[wavelength]["image"] = np.zeros(experimental_data.image_cleared[wavelength].shape,np.uint16)
-
-                if wavelength==740:
-                    experimental_data.image_cleared[740] = experimental_data.image[740].astype(np.uint16)
-                    experimental_data.image_cleared[740] = self.ConvertTo8Bit(experimental_data.image_cleared[740],experimental_data.max_image_value)
-
-                if wavelength in (660,400):
-                    t1 = time.clock()
-                    self.total_iterations[wavelength] += 1
-
-                    image = experimental_data.image[wavelength].astype(np.float)
-
-                    # Вычитание фона
-                    if experimental_data.image[0] is not None:
-                        experimental_data.image_cleared[wavelength] = image - parameters.use_black_image * experimental_data.image[0]
-                        experimental_data.image_cleared[wavelength][experimental_data.image_cleared[wavelength] < 0] = 0
-                    else:
-                        experimental_data.image_cleared[wavelength] = image
-
-                    experimental_data.image_cleared[wavelength] = experimental_data.image_cleared[wavelength].astype(np.uint16)
-                    experimental_data.image_cleared_with_contours_rbg[wavelength] = cv2.cvtColor(experimental_data.image_cleared[wavelength].copy(),cv2.COLOR_GRAY2RGB)
-
-
-
-                    self.good_iterations[wavelength]=self.good_iterations[wavelength]+1
-
-                    if "monitoring" not in experimental_data.mode:
-                        # Вычисление опухоли
-                        if "region defined" in experimental_data.mode:
-                            # import ipdb; ipdb.set_trace()
-                            if "poly" in experimental_data.skin_data[wavelength]:
-                                cv2.polylines(experimental_data.image_cleared_with_contours_rbg[wavelength],[np.array(experimental_data.skin_data[wavelength]["poly"], np.int32)],False,experimental_data.skin_data["color"],experimental_data.skin_data["thickness"])
-                                experimental_data.skin_data[wavelength]['image'] = experimental_data.image_cleared[wavelength]*experimental_data.skin_data[wavelength]['mask']
-                                experimental_data.skin_data[wavelength]['image'] = experimental_data.skin_data[wavelength]['image'].astype(np.uint16)
-
-                            cv2.polylines(experimental_data.image_cleared_with_contours_rbg[wavelength],[np.array(experimental_data.tumor_data[wavelength]["poly"], np.int32)],False,experimental_data.tumor_data["color"],experimental_data.tumor_data["thickness"])
-                            experimental_data.tumor_data[wavelength]['image'] = experimental_data.image_cleared[wavelength]*experimental_data.tumor_data[wavelength]['mask']
-                            experimental_data.tumor_data[wavelength]['image'] = experimental_data.tumor_data[wavelength]['image'].astype(np.uint16)
-
-                    if "monitoring" in experimental_data.mode:
-                        if "region defined" in experimental_data.mode:
-
-                            if "mask" in experimental_data.skin_data[wavelength]:
-                                experimental_data.skin_data[wavelength]['image'] = experimental_data.image_cleared[wavelength] * experimental_data.skin_data[wavelength]['mask']
-                                experimental_data.skin_data[wavelength]['image'] = experimental_data.skin_data[wavelength]['image'].astype(np.uint16)
-                                cv2.polylines(experimental_data.image_cleared_with_contours_rbg[wavelength],[np.array(experimental_data.skin_data[wavelength]["poly"], np.int32)],False,experimental_data.skin_data["color"],experimental_data.skin_data["thickness"])
-
-                            experimental_data.tumor_data[wavelength]['image'] = experimental_data.image_cleared[wavelength] * experimental_data.tumor_data[wavelength]['mask']
-
-                            experimental_data.tumor_data[wavelength]['image'] = experimental_data.tumor_data[wavelength]['image'].astype(np.uint16)
-                            cv2.polylines(experimental_data.image_cleared_with_contours_rbg[wavelength],[np.array(experimental_data.tumor_data[wavelength]["poly"], np.int32)],False,experimental_data.tumor_data["color"],experimental_data.tumor_data["thickness"])
-
-                    # Наложение
-                    if experimental_data.image_cleared[740] is not None:
-                        if "region defined" in experimental_data.mode and experimental_data.tumor_data[wavelength]['image'] is not None and experimental_data.tumor_data[wavelength]['mask'].sum()>0:
-                            #TODO: понять почему надо инвертировать изображение
-                            if wavelength in monitoring_data.tumor_mean:
-                                max_value_monitoring = max(sum(monitoring_data.tumor_max.values(), []))
-                                max_value = max(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
-                                min_value = min(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
-                            else:
-                                max_value_monitoring = max(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
-                                max_value = max(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
-                                min_value = min(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
-#
-#                             # print max_value_monitoring, max_value, min_value
-# #
-                            tumor_image = (experimental_data.tumor_data[wavelength]['image'].astype(np.float) - min_value) / (max_value_monitoring - min_value)
-                            tumor_image[tumor_image < 0] = 0
-                            tumor_image[tumor_image > 1] = 1
-                            tumor_image = self.ConvertTo8Bit(tumor_image, 1)
-                            # tumor_image = tumor_image.astype(np.float) / 255 * max_value
-                            # tumor_image = self.ConvertTo8Bit(tumor_image, max_value)
-
-                            # print tumor_image.max(), tumor_image.min()
-
-                            tumor_color = cv2.cvtColor(cv2.applyColorMap(tumor_image, cv2.COLORMAP_JET),cv2.COLOR_BGR2RGB)  #experimental_data.max_image_value-
-                            experimental_data.image_superposition_rgb[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740],cv2.COLOR_GRAY2RGB)
-                            experimental_data.image_superposition_rgb[wavelength][experimental_data.tumor_data[wavelength]['mask'] == 1] = tumor_color[experimental_data.tumor_data[wavelength]['mask'] == 1]
-                        else:
-                            experimental_data.image_superposition_rgb[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB)
-
-                        ### Наложение [wl] на [740] цветом wl для отслеживания в режиме in-vivo
-                        imgwl = experimental_data.image_cleared_with_contours_rbg[wavelength]
-                        if wavelength == 660:
-                            for d2 in imgwl:
-                                for i in d2:
-                                    i[1] = 0;
-                                    i[2] = 0;
-                        else:
-                            for d2 in imgwl:
-                                for i in d2:
-                                    i[1] = 0;
-                                    i[0] = 0;
-
-                        experimental_data.image_superposition_vivo[wavelength] = self.ConvertTo7Bit(cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB), 255) + self.ConvertTo7Bit(imgwl, experimental_data.max_image_value)
-                        #experimental_data.image_superposition_vivo[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB) + imgwl
+                        # ###
                         # if not experimental_data.flag:
                         #     experimental_data.flag = True
-                        #     # with open('image_superposition_vivo.txt', 'w') as outfile:
-                        #     #     outfile.write('# Array shape: {0}\n'.format(experimental_data.image_superposition_vivo[wavelength].shape))
-                        #     #     for data_slice in experimental_data.image_superposition_vivo[wavelength]:
-                        #     #          np.savetxt(outfile, data_slice, fmt='%-7d')
-                        #     #          outfile.write('# New slice\n')
-                        #     # w, h = 1280, 960
-                        #     #
-                        #     # img = Image.fromarray(experimental_data.image_superposition_vivo[wavelength], 'RGB')
-                        #     # img.show()
-                        ###
+                        #     x1 = experimental_data.image_cleared[wavelength]
+                        #     x2 = experimental_data.image_cleared_with_contours_rbg[wavelength]
+                        #     np.savetxt('imgclr.txt', x1, '%-7d')
+                        #     with file('imgclrrgb.txt', 'w') as outfile:
+                        #         outfile.write('# Array shape: {0}\n'.format(x2.shape))
+                        #         for data_slice in x2:
+                        #             np.savetxt(outfile, data_slice, fmt='%-7d')
+                        #             outfile.write('# New slice\n')
+                        #     # plt.figure(1)
+                        #     # plt.imshow(x1, interpolation='nearest')
+                        #     # plt.figure(2)
+                        #     # plt.imshow(x1, interpolation='nearest')
+                        #     # plt.show()
+                        # ###
 
-                    else:
-                        experimental_data.image_superposition_rgb[wavelength] = None
+                        if (parameters.tumor_shadowing_type == "glare" or "region not defined" in experimental_data.mode) and "laser on" in experimental_data.mode and len(experimental_data.image_glare_prev[0]) > 0:
+                            experimental_data.image_cleared[0] = experimental_data.image_glare_prev[0][0]
+                            experimental_data.image_cleared_with_contours_rbg[0] = cv2.cvtColor(experimental_data.image_glare_prev[0][0],cv2.COLOR_GRAY2RGB)
 
-                        ###
-                        experimental_data.image_superposition_vivo[wavelength] = None
-                        ###
+                            for wl in (400,660):
+                                if wl in monitoring_data.tumor_area and len(monitoring_data.tumor_area[wl]) > 0 and "region defined" in experimental_data.mode:
+                                    glare_area = monitoring_data.tumor_area[wl][-1]
+                                    # print "glare_area: ",glare_area
+                                    current_level = find_glare_level_for_image(experimental_data.image_glare_prev[0][0], glare_area, parameters.x_mm_in_pixel, parameters.y_mm_in_pixel)
+                                    contour = contour_from_level(experimental_data.image_glare_prev[0][0], current_level)
+                                else:
+                                    contour = contour_from_level(experimental_data.image_glare_prev[0][0], experimental_data.max_image_value - parameters.glare_parameters["dmin_glare_value"])
+
+                                tumor_poly = [[c[0][0],c[0][1]] for c in contour]
+                                if "mask" not in experimental_data.tumor_data[wl]:
+                                    experimental_data.tumor_data[wl]["mask"] = np.zeros(experimental_data.image_cleared[0].shape, np.uint8)
+
+                                # Сделать смещение маски кожи
+                                experimental_data.tumor_data[wl]["poly"] = tumor_poly
+                                experimental_data.tumor_data[wl]["mask"][:] = 0
+                                cv2.fillPoly(experimental_data.tumor_data[wl]["mask"], [np.asarray(experimental_data.tumor_data[wl]["poly"])], 1)
+
+                                # Сделать определение маски кожи
+
+                                # experimental_data.skin_data[wavelength]["mask"]=np.ones(experimental_data.image_cleared[wavelength].shape)
+                                #
+                                # experimental_data.image_cleared_with_contours_rbg[wavelength]=cv2.cvtColor(experimental_data.image_cleared[wavelength],cv2.COLOR_GRAY2BGR)
+                                # experimental_data.tumor_data[wavelength]['image'] = experimental_data.image_cleared[wavelength]*experimental_data.tumor_data[wavelength]["mask"]
+                                #
+                                # if experimental_data.skin_data[wavelength]["mask"].sum()>0:
+                                #     if experimental_data.tumor_data[wavelength]["mask"].sum()>0:
+                                #         diff_mask = experimental_data.skin_data[wavelength]["mask"].astype(np.float)-experimental_data.tumor_data[wavelength]["mask"].astype(np.float)
+                                #         diff_mask[diff_mask < 0] = 0
+                                #         experimental_data.skin_data[wavelength]["image"] = experimental_data.image_cleared[wavelength] * diff_mask.astype(np.uint16)
+                                #     else:
+                                #         experimental_data.skin_data[wavelength]["image"] = experimental_data.image_cleared[wavelength] * experimental_data.skin_data[wavelength]["mask"]
+                                # else:
+                                #     experimental_data.skin_data[wavelength]["image"] = np.zeros(experimental_data.image_cleared[wavelength].shape,np.uint16)
+
+                    if wavelength==740:
+                        experimental_data.image_cleared[740] = experimental_data.image[740].astype(np.uint16)
+                        experimental_data.image_cleared[740] = self.ConvertTo8Bit(experimental_data.image_cleared[740],experimental_data.max_image_value)
+
+                    if wavelength in (660,400):
+                        t1 = time.clock()
+                        self.total_iterations[wavelength] += 1
+
+                        image = experimental_data.image[wavelength].astype(np.float)
+
+                        # Вычитание фона
+                        if experimental_data.image[0] is not None:
+                            experimental_data.image_cleared[wavelength] = image - parameters.use_black_image * experimental_data.image[0]
+                            experimental_data.image_cleared[wavelength][experimental_data.image_cleared[wavelength] < 0] = 0
+                        else:
+                            experimental_data.image_cleared[wavelength] = image
+
+                        experimental_data.image_cleared[wavelength] = experimental_data.image_cleared[wavelength].astype(np.uint16)
+                        experimental_data.image_cleared_with_contours_rbg[wavelength] = cv2.cvtColor(experimental_data.image_cleared[wavelength].copy(),cv2.COLOR_GRAY2RGB)
+
+
+
+                        self.good_iterations[wavelength]=self.good_iterations[wavelength]+1
+
+                        if "monitoring" not in experimental_data.mode:
+                            # Вычисление опухоли
+                            if "region defined" in experimental_data.mode:
+                                # import ipdb; ipdb.set_trace()
+                                if "poly" in experimental_data.skin_data[wavelength]:
+                                    cv2.polylines(experimental_data.image_cleared_with_contours_rbg[wavelength],[np.array(experimental_data.skin_data[wavelength]["poly"], np.int32)],False,experimental_data.skin_data["color"],experimental_data.skin_data["thickness"])
+                                    experimental_data.skin_data[wavelength]['image'] = experimental_data.image_cleared[wavelength]*experimental_data.skin_data[wavelength]['mask']
+                                    experimental_data.skin_data[wavelength]['image'] = experimental_data.skin_data[wavelength]['image'].astype(np.uint16)
+
+                                cv2.polylines(experimental_data.image_cleared_with_contours_rbg[wavelength],[np.array(experimental_data.tumor_data[wavelength]["poly"], np.int32)],False,experimental_data.tumor_data["color"],experimental_data.tumor_data["thickness"])
+                                experimental_data.tumor_data[wavelength]['image'] = experimental_data.image_cleared[wavelength]*experimental_data.tumor_data[wavelength]['mask']
+                                experimental_data.tumor_data[wavelength]['image'] = experimental_data.tumor_data[wavelength]['image'].astype(np.uint16)
+
+                        if "monitoring" in experimental_data.mode:
+                            if "region defined" in experimental_data.mode:
+
+                                if "mask" in experimental_data.skin_data[wavelength]:
+                                    experimental_data.skin_data[wavelength]['image'] = experimental_data.image_cleared[wavelength] * experimental_data.skin_data[wavelength]['mask']
+                                    experimental_data.skin_data[wavelength]['image'] = experimental_data.skin_data[wavelength]['image'].astype(np.uint16)
+                                    cv2.polylines(experimental_data.image_cleared_with_contours_rbg[wavelength],[np.array(experimental_data.skin_data[wavelength]["poly"], np.int32)],False,experimental_data.skin_data["color"],experimental_data.skin_data["thickness"])
+
+                                experimental_data.tumor_data[wavelength]['image'] = experimental_data.image_cleared[wavelength] * experimental_data.tumor_data[wavelength]['mask']
+
+                                experimental_data.tumor_data[wavelength]['image'] = experimental_data.tumor_data[wavelength]['image'].astype(np.uint16)
+                                cv2.polylines(experimental_data.image_cleared_with_contours_rbg[wavelength],[np.array(experimental_data.tumor_data[wavelength]["poly"], np.int32)],False,experimental_data.tumor_data["color"],experimental_data.tumor_data["thickness"])
+
+                        # Наложение
+                        if experimental_data.image_cleared[740] is not None:
+                            if "region defined" in experimental_data.mode and experimental_data.tumor_data[wavelength]['image'] is not None and experimental_data.tumor_data[wavelength]['mask'].sum()>0:
+                                #TODO: понять почему надо инвертировать изображение
+                                if wavelength in monitoring_data.tumor_mean:
+                                    max_value_monitoring = max(sum(monitoring_data.tumor_max.values(), []))
+                                    max_value = max(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
+                                    min_value = min(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
+                                else:
+                                    max_value_monitoring = max(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
+                                    max_value = max(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
+                                    min_value = min(experimental_data.tumor_data[wavelength]['image'][experimental_data.tumor_data[wavelength]['mask'] == 1])
+#
+#                               # print max_value_monitoring, max_value, min_value
+# #
+                                tumor_image = (experimental_data.tumor_data[wavelength]['image'].astype(np.float) - min_value) / (max_value_monitoring - min_value)
+                                tumor_image[tumor_image < 0] = 0
+                                tumor_image[tumor_image > 1] = 1
+                                tumor_image = self.ConvertTo8Bit(tumor_image, 1)
+                                # tumor_image = tumor_image.astype(np.float) / 255 * max_value
+                                # tumor_image = self.ConvertTo8Bit(tumor_image, max_value)
+
+                                # print tumor_image.max(), tumor_image.min()
+
+                                tumor_color = cv2.cvtColor(cv2.applyColorMap(tumor_image, cv2.COLORMAP_JET),cv2.COLOR_BGR2RGB)  #experimental_data.max_image_value-
+                                experimental_data.image_superposition_rgb[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740],cv2.COLOR_GRAY2RGB)
+                                experimental_data.image_superposition_rgb[wavelength][experimental_data.tumor_data[wavelength]['mask'] == 1] = tumor_color[experimental_data.tumor_data[wavelength]['mask'] == 1]
+                            else:
+                                experimental_data.image_superposition_rgb[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB)
+
+                            # ## Наложение [wl] на [740] цветом wl для отслеживания в режиме in-vivo
+                            # imgwl = experimental_data.image_cleared_with_contours_rbg[wavelength]
+                            # if wavelength == 660:
+                            #     for d2 in imgwl:
+                            #         for i in d2:
+                            #             i[1] = 0;
+                            #             i[2] = 0;
+                            # else:
+                            #     for d2 in imgwl:
+                            #         for i in d2:
+                            #             i[1] = 0;
+                            #             i[0] = 0;
+                            # experimental_data.image_superposition_vivo[wavelength] = self.ConvertToXBit(cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB), 255, experimental_data.proportion) + self.ConvertToXBit(imgwl, experimental_data.max_image_value, (100-experimental_data.proportion))
+                            experimental_data.image_superposition_vivo[wavelength] = self.superpose_vivo(experimental_data, wavelength)
+
+                            #experimental_data.image_superposition_vivo[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB) + imgwl
+                            # if not experimental_data.flag:
+                            #     experimental_data.flag = True
+                            #     # with open('image_superposition_vivo.txt', 'w') as outfile:
+                            #     #     outfile.write('# Array shape: {0}\n'.format(experimental_data.image_superposition_vivo[wavelength].shape))
+                            #     #     for data_slice in experimental_data.image_superposition_vivo[wavelength]:
+                            #     #          np.savetxt(outfile, data_slice, fmt='%-7d')
+                            #     #          outfile.write('# New slice\n')
+                            #     # w, h = 1280, 960
+                            #     #
+                            #     # img = Image.fromarray(experimental_data.image_superposition_vivo[wavelength], 'RGB')
+                            #     # img.show()
+                            ###
+
+                        else:
+                            experimental_data.image_superposition_rgb[wavelength] = None
+
+                            ###
+                            experimental_data.image_superposition_vivo[wavelength] = None
+                            ###
+
+                        t2 = time.clock()
+                        # print "Processing image wavelength={wavelength}, {t} s. Pool length {len_pool}".format(t=t2-t1, wavelength=wavelength, len_pool=len(self.q))
+
+                        if "region defined" in experimental_data.mode:
+                            self.CalculateProperties(wavelength, experimental_data, parameters)
 
                     t2 = time.clock()
-                    # print "Processing image wavelength={wavelength}, {t} s. Pool length {len_pool}".format(t=t2-t1, wavelength=wavelength, len_pool=len(self.q))
-
-                    if "region defined" in experimental_data.mode:
-                        self.CalculateProperties(wavelength, experimental_data, parameters)
-
-                t2 = time.clock()
+                ###
+                else:
+                    if wavelength in (660, 400):
+                        experimental_data.image_superposition_vivo[wavelength] = self.superpose_vivo(experimental_data, wavelength)
+                ###
 
                 self.image_segmented.emit((task))
 
@@ -342,6 +350,30 @@ class WorkerSegmentation(QtCore.QThread):
 
     def clearjob(self):
         self.q.clear()
+
+    ### Функция пердполагает, что wavelength in (660, 400), experimental_data.image_cleared[740] is not None
+    def superpose_vivo(self, experimental_data, wavelength):
+        if experimental_data.image_cleared_with_contours_rbg[wavelength] is not None:
+            imgwl = experimental_data.image_cleared_with_contours_rbg[wavelength]
+            if wavelength == 660:
+                for d2 in imgwl:
+                    for i in d2:
+                        i[1] = 0;
+                        i[2] = 0;
+            elif wavelength == 400:
+                for d2 in imgwl:
+                    for i in d2:
+                        i[1] = 0;
+                        i[0] = 0;
+            else:
+                return None
+            if experimental_data.image_cleared[740] is not None:
+                return self.ConvertToXBit(cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB), 255, experimental_data.proportion) + self.ConvertToXBit(imgwl, experimental_data.max_image_value, (100 - experimental_data.proportion))
+            else:
+                return None
+        else:
+            return None
+    ###
 
 def find_glare_level_for_image(image, glare_area, x_mm_in_pixel, y_mm_in_pixel):
     min_level = 0.0

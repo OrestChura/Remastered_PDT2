@@ -9,6 +9,7 @@ from PyQt4 import QtGui, QtCore, Qt
 import WorkerHardware
 import WorkerSegmentation
 import ExperimentalData
+import Task
 import Monitoring
 import time
 import Parameters
@@ -108,6 +109,11 @@ class PDTMainWindowProc(QtGui.QWidget):
 
         self.ui.combo_selected_image.currentIndexChanged.connect(self.combo_selected_image_changed)
 
+        ###
+        self.ui.combo_selected_image_2.currentIndexChanged.connect(self.combo_selected_image_changed_2)
+        self.ui.slider_combine.valueChanged.connect(self.slider_changed)
+        ###
+
         self.ui.edit_alarm400.textEdited.connect(self.edit_alarm_changed)
         self.ui.edit_alarm660.textEdited.connect(self.edit_alarm_changed)
         self.ui.e400Exposition.editingFinished.connect(self.exposition_changed)
@@ -182,7 +188,24 @@ class PDTMainWindowProc(QtGui.QWidget):
 
 
     def combo_selected_image_changed(self):
-        self.update_data_on_screen(image_changed=True)
+        ###
+        if not self.ui.combo_selected_image_2.currentIndex() == self.ui.combo_selected_image.currentIndex():
+            self.ui.combo_selected_image_2.setCurrentIndex(self.ui.combo_selected_image.currentIndex())
+        ###
+            self.update_data_on_screen(image_changed=True)
+
+    ###
+    def combo_selected_image_changed_2(self):
+        ###
+        if not self.ui.combo_selected_image.currentIndex() == self.ui.combo_selected_image_2.currentIndex():
+            self.ui.combo_selected_image.setCurrentIndex(self.ui.combo_selected_image_2.currentIndex())
+        ###
+            self.update_data_on_screen(image_changed=True)
+
+    def slider_changed(self, value):
+        self.experimental_data.proportion = value
+        self.update_vivo()
+    ###
 
     def set_permissions(self, filename):
         # import win32security
@@ -329,6 +352,18 @@ class PDTMainWindowProc(QtGui.QWidget):
         if 'laser off' in self.experimental_data.mode and 'region defined' in self.experimental_data.mode and 'monitoring' in self.experimental_data.mode and wavelength in (400,660):
             self.monitoring.append(self.experimental_data.properties, [wavelength])
             self.update_monitoring_plots()
+
+    ###
+    def update_vivo(self):
+        task400 = Task.Task()
+        task400.wavelength = 400
+        task400.vivo = True
+        self.worker_segmentation.addjob((task400, self.experimental_data, self.parameters, self.monitoring))
+        task660 = Task.Task()
+        task660.wavelength = 660
+        task660.vivo = True
+        self.worker_segmentation.addjob((task660, self.experimental_data, self.parameters, self.monitoring))
+    ###
 
     def update_data_on_screen(self, **kwargs):
         if 'image_changed' in kwargs and kwargs['image_changed'] == True:
@@ -1075,6 +1110,9 @@ class PDTMainWindowProc(QtGui.QWidget):
 
         self.fluocontrollers.camera_controller.SetExposureTime(int(self.parameters.camera_exposition * 1e6))
         self.ui.combo_selected_image.clear()
+        ###
+        self.ui.combo_selected_image_2.clear()
+        ###
         iTask = 0
         if self.ui.widget_led740.value == True:
             self.fluocontrollers.lighting_controller.SetLightingMode(iTask, constants.LM_IR, int(self.parameters.exposition[740] * 1e6))
@@ -1086,18 +1124,27 @@ class PDTMainWindowProc(QtGui.QWidget):
         self.experimental_data.working_leds.append(0)
         iTask = iTask + 1
         self.ui.combo_selected_image.addItem(u"темновой кадр")
+        ###
+        self.ui.combo_selected_image_2.addItem(u"темновой кадр")
+        ###
 
         if self.ui.widget_led660.value == True:
             self.fluocontrollers.lighting_controller.SetLightingMode(iTask, constants.LM_RED, int(self.parameters.exposition[660] * 1e6))
             iTask = iTask + 1
             self.experimental_data.working_leds.append(660)
             self.ui.combo_selected_image.addItem(u"660 нм")
+            ###
+            self.ui.combo_selected_image_2.addItem(u"660 нм")
+            ###
 
         if self.ui.widget_led400.value == True:
             self.fluocontrollers.lighting_controller.SetLightingMode(iTask, constants.LM_BLUE, int(self.parameters.exposition[400] * 1e6))
             iTask = iTask + 1
             self.experimental_data.working_leds.append(400)
             self.ui.combo_selected_image.addItem(u"400 нм")
+            ###
+            self.ui.combo_selected_image_2.addItem(u"400 нм")
+            ###
 
 
         # self.fluocontrollers.lighting_controller.SetPeriod(int(1.5*float(self.ui.eCameraExposition.text())*1e6))
@@ -1141,6 +1188,11 @@ class PDTMainWindowProc(QtGui.QWidget):
         self.worker_hardware.image_size = self.parameters.image_size
         self.ui.combo_selected_image.clear()
         self.ui.combo_selected_image.addItem(u"темновой кадр")
+
+        ###
+        self.ui.combo_selected_image_2.clear()
+        self.ui.combo_selected_image_2.addItem(u"темновой кадр")
+        ###
 
         if self.ui.pStart.isChecked() == True:
             self.fluorcontroller_start()
@@ -1539,22 +1591,46 @@ class PDTMainWindowProc(QtGui.QWidget):
         self.ui.combo_selected_image.currentIndexChanged.disconnect(self.combo_selected_image_changed)
         self.ui.combo_selected_image.clear()
 
+        ###
+        self.ui.combo_selected_image_2.currentIndexChanged.disconnect(self.combo_selected_image_changed_2)
+        self.ui.combo_selected_image_2.clear()
+        ###
+
         if len(self.experimental_data.image_cleared_with_contours_rbg.keys()) == 0:
             self.ui.combo_selected_image.addItem(u"400 нм")
             self.ui.combo_selected_image.addItem(u"темновой кадр")
             self.ui.combo_selected_image.addItem(u"660 нм")
 
+            ###
+            self.ui.combo_selected_image_2.addItem(u"400 нм")
+            self.ui.combo_selected_image_2.addItem(u"темновой кадр")
+            self.ui.combo_selected_image_2.addItem(u"660 нм")
+            ###
+
         for wavelenght in self.experimental_data.image_cleared_with_contours_rbg.keys():
             if wavelenght == 400:
                 self.ui.combo_selected_image.addItem(u"400 нм")
+                ###
+                self.ui.combo_selected_image_2.addItem(u"400 нм")
+                ###
             if wavelenght == 0:
                 self.ui.combo_selected_image.addItem(u"темновой кадр")
+                ###
+                self.ui.combo_selected_image_2.addItem(u"темновой кадр")
+                ###
             if wavelenght == 660:
                 self.ui.combo_selected_image.addItem(u"660 нм")
-
+                ###
+                self.ui.combo_selected_image_2.addItem(u"660 нм")
+                ###
 
         self.ui.combo_selected_image.setCurrentIndex(ind)
         self.ui.combo_selected_image.currentIndexChanged.connect(self.combo_selected_image_changed)
+
+        ###
+        self.ui.combo_selected_image_2.setCurrentIndex(ind)
+        self.ui.combo_selected_image_2.currentIndexChanged.connect(self.combo_selected_image_changed_2)
+        ###
 
         self.update_data_on_screen(image_changed=False)
         self.update_monitoring_plots()
