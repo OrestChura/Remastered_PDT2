@@ -152,24 +152,6 @@ class WorkerSegmentation(QtCore.QThread):
                         experimental_data.image_cleared[0] = experimental_data.image[0]
                         experimental_data.image_cleared_with_contours_rbg[0] = cv2.cvtColor(experimental_data.image[0],cv2.COLOR_GRAY2RGB)
 
-                        # ###
-                        # if not experimental_data.flag:
-                        #     experimental_data.flag = True
-                        #     x1 = experimental_data.image_cleared[wavelength]
-                        #     x2 = experimental_data.image_cleared_with_contours_rbg[wavelength]
-                        #     np.savetxt('imgclr.txt', x1, '%-7d')
-                        #     with file('imgclrrgb.txt', 'w') as outfile:
-                        #         outfile.write('# Array shape: {0}\n'.format(x2.shape))
-                        #         for data_slice in x2:
-                        #             np.savetxt(outfile, data_slice, fmt='%-7d')
-                        #             outfile.write('# New slice\n')
-                        #     # plt.figure(1)
-                        #     # plt.imshow(x1, interpolation='nearest')
-                        #     # plt.figure(2)
-                        #     # plt.imshow(x1, interpolation='nearest')
-                        #     # plt.show()
-                        # ###
-
                         if (parameters.tumor_shadowing_type == "glare" or "region not defined" in experimental_data.mode) and "laser on" in experimental_data.mode and len(experimental_data.image_glare_prev[0]) > 0:
                             experimental_data.image_cleared[0] = experimental_data.image_glare_prev[0][0]
                             experimental_data.image_cleared_with_contours_rbg[0] = cv2.cvtColor(experimental_data.image_glare_prev[0][0],cv2.COLOR_GRAY2RGB)
@@ -302,7 +284,7 @@ class WorkerSegmentation(QtCore.QThread):
                             #             i[1] = 0;
                             #             i[0] = 0;
                             # experimental_data.image_superposition_vivo[wavelength] = self.ConvertToXBit(cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB), 255, experimental_data.proportion) + self.ConvertToXBit(imgwl, experimental_data.max_image_value, (100-experimental_data.proportion))
-                            experimental_data.image_superposition_vivo[wavelength] = self.superpose_vivo(experimental_data, wavelength)
+                            #experimental_data.image_superposition_vivo[wavelength] = self.superpose_vivo(experimental_data, wavelength)
 
                             #experimental_data.image_superposition_vivo[wavelength] = cv2.cvtColor(experimental_data.image_cleared[740], cv2.COLOR_GRAY2RGB) + imgwl
                             # if not experimental_data.flag:
@@ -322,7 +304,7 @@ class WorkerSegmentation(QtCore.QThread):
                             experimental_data.image_superposition_rgb[wavelength] = None
 
                             ###
-                            experimental_data.image_superposition_vivo[wavelength] = None
+                            #experimental_data.image_superposition_vivo[wavelength] = None
                             ###
 
                         t2 = time.clock()
@@ -334,8 +316,10 @@ class WorkerSegmentation(QtCore.QThread):
                     t2 = time.clock()
                 ###
                 else:
-                    if wavelength in (660, 400):
+                    if experimental_data.image_cleared[740] is not None and wavelength in (660, 400):
                         experimental_data.image_superposition_vivo[wavelength] = self.superpose_vivo(experimental_data, wavelength)
+                    else:
+                        experimental_data.image_superposition_vivo[wavelength] = None
                 ###
 
                 self.image_segmented.emit((task))
@@ -351,10 +335,9 @@ class WorkerSegmentation(QtCore.QThread):
     def clearjob(self):
         self.q.clear()
 
-    ### Функция пердполагает, что wavelength in (660, 400), experimental_data.image_cleared[740] is not None
     def superpose_vivo(self, experimental_data, wavelength):
         if experimental_data.image_cleared_with_contours_rbg[wavelength] is not None:
-            imgwl = experimental_data.image_cleared_with_contours_rbg[wavelength]
+            imgwl = np.copy(experimental_data.image_cleared_with_contours_rbg[wavelength])
             if wavelength == 660:
                 for d2 in imgwl:
                     for i in d2:
@@ -363,7 +346,7 @@ class WorkerSegmentation(QtCore.QThread):
             elif wavelength == 400:
                 for d2 in imgwl:
                     for i in d2:
-                        i[1] = 0;
+                        i[2] = 0;
                         i[0] = 0;
             else:
                 return None

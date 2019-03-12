@@ -189,18 +189,18 @@ class PDTMainWindowProc(QtGui.QWidget):
 
     def combo_selected_image_changed(self):
         ###
-        if not self.ui.combo_selected_image_2.currentIndex() == self.ui.combo_selected_image.currentIndex():
-            self.ui.combo_selected_image_2.setCurrentIndex(self.ui.combo_selected_image.currentIndex())
+        #if not self.ui.combo_selected_image_2.currentIndex() == self.ui.combo_selected_image.currentIndex():
+        #    self.ui.combo_selected_image_2.setCurrentIndex(self.ui.combo_selected_image.currentIndex())
         ###
-            self.update_data_on_screen(image_changed=True)
+        self.update_data_on_screen(image_changed=1)
 
     ###
     def combo_selected_image_changed_2(self):
         ###
-        if not self.ui.combo_selected_image.currentIndex() == self.ui.combo_selected_image_2.currentIndex():
-            self.ui.combo_selected_image.setCurrentIndex(self.ui.combo_selected_image_2.currentIndex())
+        #if not self.ui.combo_selected_image.currentIndex() == self.ui.combo_selected_image_2.currentIndex():
+        #    self.ui.combo_selected_image.setCurrentIndex(self.ui.combo_selected_image_2.currentIndex())
         ###
-            self.update_data_on_screen(image_changed=True)
+        self.update_data_on_screen(image_changed=2)
 
     def slider_changed(self, value):
         self.experimental_data.proportion = value
@@ -316,7 +316,7 @@ class PDTMainWindowProc(QtGui.QWidget):
             ###
 
     def mouse_moved_on_graph_image(self, evt):
-        wavelength = self.get_selected_image_wavelength_on_graph_image()
+        wavelength = self.get_selected_image_wavelength_on_graph_image(1)
 
         if wavelength is not None:
             if self.experimental_data.image_cleared[wavelength] is not None:
@@ -337,9 +337,10 @@ class PDTMainWindowProc(QtGui.QWidget):
     def image_segmented(self, args):  # изображение отсегментировано
         task = args
         wavelength = task.wavelength
-        select_wavelength = self.get_selected_image_wavelength_on_graph_image()
+        image_changed = {True: 2, False: 1}.get(task.vivo)
+        select_wavelength = self.get_selected_image_wavelength_on_graph_image(image_changed)
         if wavelength == select_wavelength:
-            self.update_data_on_screen()
+            self.update_data_on_screen(image_changed = image_changed)
 
         # self.experimental_data.image_superposition_rgb[wavelength] = cv2.cvtColor(self.experimental_data.image_cleared[740],
         #                                                                      cv2.COLOR_GRAY2RGB)
@@ -366,12 +367,12 @@ class PDTMainWindowProc(QtGui.QWidget):
     ###
 
     def update_data_on_screen(self, **kwargs):
-        if 'image_changed' in kwargs and kwargs['image_changed'] == True:
-            image_changed = True
+        if 'image_changed' in kwargs and bool(kwargs['image_changed']) == True:
+            image_changed = kwargs['image_changed']
         else:
             image_changed = False
 
-        wavelength = self.get_selected_image_wavelength_on_graph_image()
+        wavelength = self.get_selected_image_wavelength_on_graph_image(image_changed)
         if wavelength is None:
             return
 
@@ -403,11 +404,10 @@ class PDTMainWindowProc(QtGui.QWidget):
             if wavelength == 0 and image_label in ('image_superposition_rgb', 'image_superposition_vivo'):
                 if 740 in self.experimental_data.image_cleared and self.experimental_data.image_cleared[740] is not None:
                     image = self.experimental_data.image_cleared[740]
-            else:
-                if wavelength in images and images[wavelength] is not None:
+            elif wavelength in images and images[wavelength] is not None:
                     image = images[wavelength]
-                else:
-                    continue
+            else:
+                    image = None
             ###
 
             if 'levels' not in graph_image_data[wavelength]:
@@ -430,7 +430,7 @@ class PDTMainWindowProc(QtGui.QWidget):
                 graph.getHistogramWidget().item.setLevels(*graph_image_data[wavelength]['levels'])
 
             if self.parameters.use_autolevel:
-                if image_changed:
+                if bool(image_changed):
                     graph.getHistogramWidget().item.setLevels(*graph_image_data[wavelength]['levels'])
                 else:
                     graph_image_data[wavelength]['levels'] = graph.getHistogramWidget().item.getLevels()
@@ -566,9 +566,9 @@ class PDTMainWindowProc(QtGui.QWidget):
             self.experimental_data.mode.add("region not defined")
 
         self.experimental_data.properties.__init__()
-
+#TODO: посмотреть что с этой функцией
     def push_manual_mode_clicked(self):
-        wavelength = self.get_selected_image_wavelength_on_graph_image()
+        wavelength = self.get_selected_image_wavelength_on_graph_image(1)
         if wavelength is not None:
             if self.experimental_data.image_cleared[wavelength] is not None:
                 image_for_manual_input = self.experimental_data.image_cleared[wavelength].copy()
@@ -1205,18 +1205,28 @@ class PDTMainWindowProc(QtGui.QWidget):
         else:
             self.parameters.use_black_image = 0
 
-    def get_selected_image_wavelength_on_graph_image(self):
+    def get_selected_image_wavelength_on_graph_image(self, image_changed):
         wavelength = None
-        combo_selected_image_text = unicode(self.ui.combo_selected_image.currentText())
-        if combo_selected_image_text == u'400 нм':
-            wavelength = 400
-        if combo_selected_image_text == u'660 нм':
-            wavelength = 660
-        if combo_selected_image_text == u'740 нм':
-            wavelength = 740
-        if combo_selected_image_text == u'темновой кадр':
-            wavelength = 0
-
+        if image_changed == 1:
+            combo_selected_image_text = unicode(self.ui.combo_selected_image.currentText())
+            if combo_selected_image_text == u'400 нм':
+                wavelength = 400
+            if combo_selected_image_text == u'660 нм':
+                wavelength = 660
+            if combo_selected_image_text == u'740 нм':
+                wavelength = 740
+            if combo_selected_image_text == u'темновой кадр':
+                wavelength = 0
+        elif image_changed == 2:
+            combo_selected_image_text = unicode(self.ui.combo_selected_image_2.currentText())
+            if combo_selected_image_text == u'400 нм':
+                wavelength = 400
+            if combo_selected_image_text == u'660 нм':
+                wavelength = 660
+            if combo_selected_image_text == u'740 нм':
+                wavelength = 740
+            if combo_selected_image_text == u'темновой кадр':
+                wavelength = 0
         return wavelength
 
     def push_single_frame_400_clicked(self):
@@ -1592,8 +1602,8 @@ class PDTMainWindowProc(QtGui.QWidget):
         self.ui.combo_selected_image.clear()
 
         ###
-        self.ui.combo_selected_image_2.currentIndexChanged.disconnect(self.combo_selected_image_changed_2)
-        self.ui.combo_selected_image_2.clear()
+        #self.ui.combo_selected_image_2.currentIndexChanged.disconnect(self.combo_selected_image_changed_2)
+        #self.ui.combo_selected_image_2.clear()
         ###
 
         if len(self.experimental_data.image_cleared_with_contours_rbg.keys()) == 0:
@@ -1602,37 +1612,37 @@ class PDTMainWindowProc(QtGui.QWidget):
             self.ui.combo_selected_image.addItem(u"660 нм")
 
             ###
-            self.ui.combo_selected_image_2.addItem(u"400 нм")
-            self.ui.combo_selected_image_2.addItem(u"темновой кадр")
-            self.ui.combo_selected_image_2.addItem(u"660 нм")
+            #self.ui.combo_selected_image_2.addItem(u"400 нм")
+            #self.ui.combo_selected_image_2.addItem(u"темновой кадр")
+            #self.ui.combo_selected_image_2.addItem(u"660 нм")
             ###
 
         for wavelenght in self.experimental_data.image_cleared_with_contours_rbg.keys():
             if wavelenght == 400:
                 self.ui.combo_selected_image.addItem(u"400 нм")
                 ###
-                self.ui.combo_selected_image_2.addItem(u"400 нм")
+                #self.ui.combo_selected_image_2.addItem(u"400 нм")
                 ###
             if wavelenght == 0:
                 self.ui.combo_selected_image.addItem(u"темновой кадр")
                 ###
-                self.ui.combo_selected_image_2.addItem(u"темновой кадр")
+                #self.ui.combo_selected_image_2.addItem(u"темновой кадр")
                 ###
             if wavelenght == 660:
                 self.ui.combo_selected_image.addItem(u"660 нм")
                 ###
-                self.ui.combo_selected_image_2.addItem(u"660 нм")
+                #self.ui.combo_selected_image_2.addItem(u"660 нм")
                 ###
 
         self.ui.combo_selected_image.setCurrentIndex(ind)
         self.ui.combo_selected_image.currentIndexChanged.connect(self.combo_selected_image_changed)
 
         ###
-        self.ui.combo_selected_image_2.setCurrentIndex(ind)
-        self.ui.combo_selected_image_2.currentIndexChanged.connect(self.combo_selected_image_changed_2)
+        #self.ui.combo_selected_image_2.setCurrentIndex(ind)
+        #self.ui.combo_selected_image_2.currentIndexChanged.connect(self.combo_selected_image_changed_2)
         ###
 
-        self.update_data_on_screen(image_changed=False)
+        self.update_data_on_screen(image_changed = False)
         self.update_monitoring_plots()
 
         if self.monitoring.stopwatch_laser_on['current_value'] is not None:
@@ -1642,7 +1652,7 @@ class PDTMainWindowProc(QtGui.QWidget):
         stopwatch_str="%02d:%02d" % (m, s)
         self.ui.lcdNumber.display(stopwatch_str)
 
-        wavelength = self.get_selected_image_wavelength_on_graph_image()
+        wavelength = self.get_selected_image_wavelength_on_graph_image(1)
 
         str_properties = self.experimental_data.properties.make_string(wavelength)
         if wavelength in self.experimental_data.tumor_data and 'rectangle' in self.experimental_data.tumor_data[wavelength] and self.experimental_data.tumor_data[wavelength]['rectangle'] is not None:
