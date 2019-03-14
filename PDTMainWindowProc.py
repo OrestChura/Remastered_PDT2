@@ -337,7 +337,8 @@ class PDTMainWindowProc(QtGui.QWidget):
     def image_segmented(self, args):  # изображение отсегментировано
         task = args
         wavelength = task.wavelength
-        image_changed = {True: 2, False: 1}.get(task.vivo)
+        image_changed = {True: 2,
+                         False: 1}.get(task.vivo)
         select_wavelength = self.get_selected_image_wavelength_on_graph_image(image_changed)
         if wavelength == select_wavelength:
             self.update_data_on_screen(image_changed = image_changed)
@@ -412,6 +413,7 @@ class PDTMainWindowProc(QtGui.QWidget):
 
             if 'levels' not in graph_image_data[wavelength]:
                 if image_label == 'image_cleared_with_contours_rbg':
+                    print('cont')
                     if self.parameters.use_autolevel:
                         graph_image_data[wavelength]['levels'] = [0, numpy.max(image)]
                     else:
@@ -420,14 +422,16 @@ class PDTMainWindowProc(QtGui.QWidget):
                             graph_image_data[w]['levels'] = [0, 1000]
 
                 if image_label in ('image_superposition_rgb', 'image_superposition_vivo'):
+                    print('ne cont')
                     if self.parameters.use_autolevel:
                         graph_image_data[wavelength]['levels'] = [0, 256]
                     else:
                         # info = numpy.iinfo(image.dtype)
                         for w in graph_image_data.keys():
                             graph_image_data[w]['levels'] = [0, 256]
-#TODO: levels плохо работают
+
                 graph.getHistogramWidget().item.setLevels(*graph_image_data[wavelength]['levels'])
+                #TODO: здесь выдаётся некритическая ошибка
 
             if self.parameters.use_autolevel:
                 if bool(image_changed):
@@ -1206,27 +1210,24 @@ class PDTMainWindowProc(QtGui.QWidget):
             self.parameters.use_black_image = 0
 
     def get_selected_image_wavelength_on_graph_image(self, image_changed):
-        wavelength = None
-        if image_changed == 1:
+        if bool(image_changed) == False:
+            current_tab_index = self.ui.tabWidget.currentIndex()
+            current_graph_image = {0: 'image_superposition_RGB',
+                                   1: 'image_superposition_vivo',
+                                   2: 'image_superposition_RGB'}.get(current_tab_index)
+        else:
+            current_graph_image = {1: 'image_superposition_RGB',
+                                   2: 'image_superposition_vivo'}.get(image_changed)
+
+        if current_graph_image == 'image_superposition_RGB':
             combo_selected_image_text = unicode(self.ui.combo_selected_image.currentText())
-            if combo_selected_image_text == u'400 нм':
-                wavelength = 400
-            if combo_selected_image_text == u'660 нм':
-                wavelength = 660
-            if combo_selected_image_text == u'740 нм':
-                wavelength = 740
-            if combo_selected_image_text == u'темновой кадр':
-                wavelength = 0
-        elif image_changed == 2:
+        else:
             combo_selected_image_text = unicode(self.ui.combo_selected_image_2.currentText())
-            if combo_selected_image_text == u'400 нм':
-                wavelength = 400
-            if combo_selected_image_text == u'660 нм':
-                wavelength = 660
-            if combo_selected_image_text == u'740 нм':
-                wavelength = 740
-            if combo_selected_image_text == u'темновой кадр':
-                wavelength = 0
+
+        wavelength = {u'400 нм': 400,
+                      u'660 нм': 660,
+                      u'740 нм': 740,
+                      u'темновой кадр': 0}.get(combo_selected_image_text)
         return wavelength
 
     def push_single_frame_400_clicked(self):
